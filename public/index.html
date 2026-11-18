@@ -17,6 +17,7 @@
 
     <main>
 
+        <!-- Add Student -->
         <section>
             <h2>Add New Student</h2>
 
@@ -26,10 +27,43 @@
             <button onclick="addStudent()">Add Student</button>
         </section>
 
+
+        <!-- Student Records -->
+        <section>
+            <h2>Student Records</h2>
+
+            <button onclick="viewStudents()">View Students</button>
+
+            <pre id="studentRecords"></pre>
+        </section>
+
+
+        <!-- Update Student -->
+        <section>
+            <h2>Update Student</h2>
+
+            <input type="text" id="updateStudentId"
+                   placeholder="Enter Student ID">
+
+            <input type="text" id="updateStudentName"
+                   placeholder="Enter New Name">
+
+            <input type="text" id="updateStudentRoll"
+                   placeholder="Enter New Roll Number">
+
+            <button onclick="updateStudent()">Update Student</button>
+        </section>
+
+
+        <!-- Mark Attendance -->
         <section>
             <h2>Mark Attendance</h2>
 
-            <input type="text" id="studentId" placeholder="Enter Roll Number">
+            <input type="text" id="studentId"
+                   placeholder="Enter Roll Number">
+
+            <input type="text" id="subject"
+                   placeholder="Enter Subject">
 
             <select id="status">
                 <option value="Present">Present</option>
@@ -39,6 +73,8 @@
             <button onclick="markAttendance()">Submit Attendance</button>
         </section>
 
+
+        <!-- Attendance Records -->
         <section>
             <h2>Attendance Records</h2>
 
@@ -47,62 +83,283 @@
             <pre id="records"></pre>
         </section>
 
+
+        <!-- Update Attendance -->
+        <section>
+            <h2>Update Attendance</h2>
+
+            <input type="text" id="updateAttendanceRoll"
+                   placeholder="Enter Roll Number">
+
+            <input type="text" id="updateAttendanceSubject"
+                   placeholder="Enter Subject">
+
+            <input type="date" id="updateAttendanceDate">
+
+            <select id="updateStatus">
+                <option value="Present">Present</option>
+                <option value="Absent">Absent</option>
+            </select>
+
+            <button onclick="updateAttendance()">Update Attendance</button>
+        </section>
+
+
+        <!-- Attendance Percentage -->
+        <section>
+            <h2>Student Attendance Percentage</h2>
+
+            <input type="text" id="percentageRoll"
+                   placeholder="Enter Roll Number">
+
+            <button onclick="viewPercentage()">View Percentage</button>
+
+            <pre id="percentageResult"></pre>
+        </section>
+
     </main>
 
+
     <script>
+
+        // Add Student
         async function addStudent() {
-            const name = document.getElementById('name').value;
-            const roll = document.getElementById('roll').value;
+            const name = document.getElementById('name').value.trim();
+            const roll = document.getElementById('roll').value.trim();
 
             if (!name || !roll) {
                 alert('Please enter all details');
                 return;
             }
 
-            const response = await fetch('/students', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ name, roll })
-            });
+            try {
+                const response = await fetch('/students', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, roll })
+                });
 
-            const result = await response.json();
-            alert(result.message);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Unable to add student');
+                }
+
+                alert(result.message);
+
+                document.getElementById('name').value = '';
+                document.getElementById('roll').value = '';
+
+                viewStudents();
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
         }
 
+
+        // View Students
+        async function viewStudents() {
+            try {
+                const response = await fetch('/students');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unable to fetch students');
+                }
+
+                document.getElementById('studentRecords').textContent =
+                    JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+
+        // Update Student
+        async function updateStudent() {
+            const id = document.getElementById('updateStudentId').value.trim();
+            const name = document.getElementById('updateStudentName').value.trim();
+            const roll = document.getElementById('updateStudentRoll').value.trim();
+
+            if (!id || (!name && !roll)) {
+                alert('Enter Student ID and at least one new detail');
+                return;
+            }
+
+            const data = {};
+
+            if (name) data.name = name;
+            if (roll) data.roll = roll;
+
+            try {
+                const response = await fetch(
+                    `/students/${encodeURIComponent(id)}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || result.message);
+                }
+
+                alert(result.message);
+                viewStudents();
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+
+        // Mark Attendance
         async function markAttendance() {
-            const roll = document.getElementById('studentId').value;
+            const roll = document.getElementById('studentId').value.trim();
+            const subject = document.getElementById('subject').value.trim();
             const status = document.getElementById('status').value;
+
+            if (!roll || !subject) {
+                alert('Please enter Roll Number and Subject');
+                return;
+            }
+
+            try {
+                const response = await fetch('/attendance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ roll, subject, status })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Unable to mark attendance');
+                }
+
+                alert(result.message);
+
+                document.getElementById('studentId').value = '';
+                document.getElementById('subject').value = '';
+
+                viewAttendance();
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+
+        // View Attendance
+        async function viewAttendance() {
+            try {
+                const response = await fetch('/attendance');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Unable to fetch attendance');
+                }
+
+                document.getElementById('records').textContent =
+                    JSON.stringify(data, null, 2);
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+
+        // Update Attendance using Roll Number, Subject and Date
+        async function updateAttendance() {
+            const roll = document.getElementById('updateAttendanceRoll').value.trim();
+            const subject = document.getElementById('updateAttendanceSubject').value.trim();
+            const date = document.getElementById('updateAttendanceDate').value;
+            const status = document.getElementById('updateStatus').value;
+
+            if (!roll || !subject || !date) {
+                alert('Please enter Roll Number, Subject and Date');
+                return;
+            }
+
+            try {
+                const response = await fetch(
+                    `/attendance/${encodeURIComponent(roll)}/${encodeURIComponent(subject)}/${date}`,
+                    {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ status })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.message || result.error);
+                }
+
+                alert(result.message);
+
+                viewAttendance();
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+
+        // View Attendance Percentage
+        async function viewPercentage() {
+            const roll = document.getElementById('percentageRoll').value.trim();
 
             if (!roll) {
                 alert('Please enter Roll Number');
                 return;
             }
 
-            const response = await fetch('/attendance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    roll,
-                    status,
-                    date: new Date().toLocaleDateString()
-                })
-            });
+            try {
+                const response = await fetch(
+                    `/attendance/percentage/${encodeURIComponent(roll)}`
+                );
 
-            const result = await response.json();
-            alert(result.message);
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Unable to calculate percentage');
+                }
+
+                let output;
+
+                if (!result.totalClasses) {
+                    output = 'No attendance records found.';
+                } else {
+                    output =
+                        `Roll Number: ${result.roll}\n` +
+                        `Total Classes: ${result.totalClasses}\n` +
+                        `Present Classes: ${result.presentClasses}\n` +
+                        `Absent Classes: ${result.absentClasses}\n` +
+                        `Attendance Percentage: ${result.attendancePercentage}`;
+                }
+
+                document.getElementById('percentageResult').textContent = output;
+
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
         }
 
-        async function viewAttendance() {
-            const response = await fetch('/attendance');
-            const data = await response.json();
-
-            document.getElementById('records').textContent =
-                JSON.stringify(data, null, 2);
-        }
     </script>
 
 </body>
